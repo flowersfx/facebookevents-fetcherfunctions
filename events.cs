@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -7,6 +8,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Configuration;
 
 namespace Mandagsklubben.Events
@@ -24,30 +26,22 @@ namespace Mandagsklubben.Events
                 .AddEnvironmentVariables()
                 .Build();
 
-            var idtest = config["FACEBOOK_PAGE_ID"];
-            return new OkObjectResult(idtest);
-
-            // try
-            // {
-            //     var token = ConfigurationManager.AppSettings["FACEBOOK_PAGE_ACCESS_TOKEN"];
-            //     var pageid = ConfigurationManager.AppSettings["FACEBOOK_PAGE_ID"];
-            //     var url = $"https://graph.facebook.com/{pageid}/";
-            //     var data = await Get(url);
-            //     var responsestr = JsonConvert.SerializeObject( new Event{eventname="test", eventdescription = data} );
-
-            //     if (responsestr == null)
-            //     {
-            //         return req.CreateResponse( HttpStatusCode.NotFound );
-            //     }
-
-            //     return req.CreateResponse( HttpStatusCode.OK, responsestr, "text/plain" );
-            // }
-            // catch (Exception e)
-            // {
-            //     return req.CreateResponse( HttpStatusCode.BadRequest, e.ToString(), "text/plain" );
-            // }
-        }
+            var pageid = config["FACEBOOK_PAGE_ID"];
+			var token = config["FACEBOOK_PAGE_ACCESS_TOKEN"];
+			var url = $"https://graph.facebook.com/v3.2/{pageid}/events?event_state_filter=['published']&time_filter=upcoming&access_token={token}";
+            JArray fbevents = (JArray)JObject.Parse( await Get(url) )["data"];
+            var events = fbevents.Select( o => new Event {
+                eventname = (string)o["name"],
+                eventdescription = (string)o["description"],
+                eventplacename = (string)o["place"]["name"],
+                eventplacestreet = (string)o["place"]["location"]["street"],
+                eventstarttime = (string)o["start_time"], // dates are weird because https://github.com/JamesNK/Newtonsoft.Json/issues/862
+                eventendtime = (string)o["end_time"]
+            } ).ToArray();
             
+			return new OkObjectResult(new Events{events=events});
+        }
+        
         public static async Task<string> Get(string url)
         {
             var request = System.Net.WebRequest.Create(url);
