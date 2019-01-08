@@ -37,11 +37,11 @@ namespace Mandagsklubben.Events
                 eventdescription = (string)o["description"],
                 eventplacename = (string)o["place"]["name"],
                 eventplacestreet = (string)o["place"]["location"]["street"],
-                eventstarttime = (string)o["start_time"], // dates are weird because https://github.com/JamesNK/Newtonsoft.Json/issues/862
+                eventstarttime = (string)o["start_time"],
                 eventendtime = (string)o["end_time"]
-            } ).ToArray();
+            } ).OrderBy( o => o.eventstarttime ).ToArray();
             
-			return new OkObjectResult(new Events{events=events});
+			return new OkObjectResult( new Events { events = events } );
         }
         
         public static async Task<string> Get(string url)
