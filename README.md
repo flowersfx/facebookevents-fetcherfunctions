@@ -1,1 +1,1 @@
-# Azure functions for måndagsklubben
+# Azure Functions for Mandagsklubben.net
