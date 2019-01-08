@@ -28,7 +28,7 @@ namespace Mandagsklubben.Events
 
             var pageid = config["FACEBOOK_PAGE_ID"];
 			var token = config["FACEBOOK_PAGE_ACCESS_TOKEN"];
-			var url = $"https://graph.facebook.com/v3.2/{pageid}/events?event_state_filter=['published']&time_filter=upcoming&access_token={token}";
+			var url = $"https://graph.facebook.com/v3.2/{pageid}/events?event_state_filter=['published']&time_filter=upcoming&fields=['cover','name','description','place','start_time','end_time']&access_token={token}";
             var jsonreader = new JsonTextReader(new StringReader(await Get(url)));
             jsonreader.DateParseHandling = DateParseHandling.None;
             JArray fbevents = (JArray)JObject.Load( jsonreader )["data"];
@@ -38,7 +38,8 @@ namespace Mandagsklubben.Events
                 eventplacename = (string)o["place"]["name"],
                 eventplacestreet = (string)o["place"]["location"]["street"],
                 eventstarttime = (string)o["start_time"],
-                eventendtime = (string)o["end_time"]
+                eventendtime = (string)o["end_time"],
+                eventcoverurl = (string)o["cover"]["source"]
             } ).OrderBy( o => o.eventstarttime ).ToArray();
             
 			return new OkObjectResult( new Events { events = events } );
