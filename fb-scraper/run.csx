@@ -10,11 +10,20 @@ using System.Threading.Tasks;
 using System.Text;
 using Newtonsoft.Json;
 
-public class Item
+public class Events
 {
-	public string Title { get; set; }
-	public string Description { get; set; }
-	public string Id { get; set; }
+	public Event[] events { get; set; }
+}
+
+public class Event
+{
+	public string eventname { get; set; }
+	public string eventdescription { get; set; }
+	public string eventcoverurl { get; set; }
+	public string eventplacename { get; set; }
+	public string eventplacestreet { get; set; }
+	public string eventstarttime { get; set; }
+	public string eventendtime { get; set; }
 }
 
 public static async Task<string> Get( string url )
@@ -35,7 +44,7 @@ public static async Task<HttpResponseMessage> Run( HttpRequestMessage req, Trace
 		var token = System.Environment.GetEnvironmentVariable( "FACEBOOK_PAGE_ACCESS_TOKEN ", EnvironmentVariableTarget.Process );
 		var url = "http://facebook.com"
 		var data = await Get( url )
-		var responsestr = JsonConvert.SerializeObject( new Item{Title="test", Description = data} );
+		var responsestr = JsonConvert.SerializeObject( new Event{eventname="test", eventdescription = data} );
 
 		if( rssstr == null )
 			return req.CreateResponse( HttpStatusCode.NotFound );
