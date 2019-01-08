@@ -1,0 +1,1 @@
+# Azure functions for måndagsklubben
