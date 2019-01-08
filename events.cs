@@ -29,7 +29,9 @@ namespace Mandagsklubben.Events
             var pageid = config["FACEBOOK_PAGE_ID"];
 			var token = config["FACEBOOK_PAGE_ACCESS_TOKEN"];
 			var url = $"https://graph.facebook.com/v3.2/{pageid}/events?event_state_filter=['published']&time_filter=upcoming&access_token={token}";
-            JArray fbevents = (JArray)JObject.Parse( await Get(url) )["data"];
+            var jsonreader = new JsonTextReader(new StringReader(await Get(url)));
+            jsonreader.DateParseHandling = DateParseHandling.None;
+            JArray fbevents = (JArray)JObject.Load( jsonreader )["data"];
             var events = fbevents.Select( o => new Event {
                 eventname = (string)o["name"],
                 eventdescription = (string)o["description"],
