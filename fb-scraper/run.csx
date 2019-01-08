@@ -42,11 +42,11 @@ public static async Task<HttpResponseMessage> Run( HttpRequestMessage req, Trace
 	{
 
 		var token = System.Environment.GetEnvironmentVariable( "FACEBOOK_PAGE_ACCESS_TOKEN ", EnvironmentVariableTarget.Process );
-		var url = "http://facebook.com"
-		var data = await Get( url )
+		var url = "http://facebook.com";
+		var data = await Get( url );
 		var responsestr = JsonConvert.SerializeObject( new Event{eventname="test", eventdescription = data} );
 
-		if( rssstr == null )
+		if( responsestr == null )
 			return req.CreateResponse( HttpStatusCode.NotFound );
 
 		return req.CreateResponse( HttpStatusCode.OK, responsestr, "text/plain" );
