@@ -37,40 +37,41 @@ namespace Mandagsklubben.Events
 
             foreach(var fbevent in fbevents) {
                 var revent = new Event();
-                revent.eventname = (fbevent["name"] ?? string.Empty).ToString();
-                revent.eventdescription = (fbevent["description"] ?? string.Empty).ToString();
+                revent.id = (fbevent["id"] ?? string.Empty).ToString();
+                revent.name = (fbevent["name"] ?? string.Empty).ToString();
+                revent.description = (fbevent["description"] ?? string.Empty).ToString();
                 
                 var fbplace = fbevent["place"]; // inlining is for machines
                 if (fbplace != null)
                 {
-                    revent.eventplacename = (fbplace["source"] ?? string.Empty).ToString();
+                    revent.placename = (fbplace["source"] ?? string.Empty).ToString();
                     var fblocation = fbplace["location"];
                     if (fblocation != null)
                     {
-                        revent.eventplacestreet = (fblocation["street"] ?? string.Empty).ToString();
+                        revent.placestreet = (fblocation["street"] ?? string.Empty).ToString();
                     }
                 } else {
-                    revent.eventplacename = string.Empty;
-                    revent.eventplacestreet = string.Empty;
+                    revent.placename = string.Empty;
+                    revent.placestreet = string.Empty;
                 }
 
-                revent.eventstarttime = (fbevent["start_time"] ?? string.Empty).ToString();
-                revent.eventendtime = (fbevent["end_time"] ?? string.Empty).ToString();
+                revent.starttime = (fbevent["start_time"] ?? string.Empty).ToString();
+                revent.endtime = (fbevent["end_time"] ?? string.Empty).ToString();
                 var fbcover = fbevent["cover"];
 
                 if (fbcover != null)
                 {
-                    revent.eventcoverurl = (fbcover["source"] ?? string.Empty).ToString();
+                    revent.coverurl = (fbcover["source"] ?? string.Empty).ToString();
                 } 
                 else
                 {
-                    revent.eventcoverurl = string.Empty;
+                    revent.coverurl = string.Empty;
                 }
 
                 events.Add(revent);
             }
             
-			return new OkObjectResult( new Events { events = events.OrderBy(t => t.eventstarttime ).ToArray() } );
+			return new OkObjectResult( new Events { events = events.OrderBy(t => t.starttime ).ToArray() } );
         }
         
         public static async Task<string> Get(string url)
@@ -91,12 +92,13 @@ namespace Mandagsklubben.Events
 
     public class Event
     {
-        public string eventname { get; set; }
-        public string eventdescription { get; set; }
-        public string eventcoverurl { get; set; }
-        public string eventplacename { get; set; }
-        public string eventplacestreet { get; set; }
-        public string eventstarttime { get; set; }
-        public string eventendtime { get; set; }
+        public string id { get; set; }
+        public string name { get; set; }
+        public string description { get; set; }
+        public string coverurl { get; set; }
+        public string placename { get; set; }
+        public string placestreet { get; set; }
+        public string starttime { get; set; }
+        public string endtime { get; set; }
     }
 }
