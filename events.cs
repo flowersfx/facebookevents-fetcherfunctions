@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 
 namespace Mandagsklubben.Events
 {
@@ -28,21 +29,48 @@ namespace Mandagsklubben.Events
 
             var pageid = config["FACEBOOK_PAGE_ID"];
 			var token = config["FACEBOOK_PAGE_ACCESS_TOKEN"];
-			var url = $"https://graph.facebook.com/v3.2/{pageid}/events?event_state_filter=['published']&time_filter=upcoming&fields=['cover','name','description','place','start_time','end_time']&access_token={token}";
+			var url = $"https://graph.facebook.com/{pageid}/events?time_filter=upcoming&fields=cover,name,description,place,start_time,end_time&access_token={token}";
             var jsonreader = new JsonTextReader(new StringReader(await Get(url)));
             jsonreader.DateParseHandling = DateParseHandling.None;
-            JArray fbevents = (JArray)JObject.Load( jsonreader )["data"];
-            var events = fbevents.Select( o => new Event {
-                eventname = (string)o["name"],
-                eventdescription = (string)o["description"],
-                eventplacename = (string)o["place"]["name"],
-                eventplacestreet = (string)o["place"]["location"]["street"],
-                eventstarttime = (string)o["start_time"],
-                eventendtime = (string)o["end_time"],
-                eventcoverurl = (string)o["cover"]["source"]
-            } ).OrderBy( o => o.eventstarttime ).ToArray();
+            JArray fbevents = (JArray)JObject.Load(jsonreader)["data"];
+            var events = new List<Event>();
+
+            foreach(var fbevent in fbevents) {
+                var revent = new Event();
+                revent.eventname = (fbevent["name"] ?? string.Empty).ToString();
+                revent.eventdescription = (fbevent["description"] ?? string.Empty).ToString();
+                
+                var fbplace = fbevent["place"]; // inlining is for machines
+                if (fbplace != null)
+                {
+                    revent.eventplacename = (fbplace["source"] ?? string.Empty).ToString();
+                    var fblocation = fbplace["location"];
+                    if (fblocation != null)
+                    {
+                        revent.eventplacestreet = (fblocation["street"] ?? string.Empty).ToString();
+                    }
+                } else {
+                    revent.eventplacename = string.Empty;
+                    revent.eventplacestreet = string.Empty;
+                }
+
+                revent.eventstarttime = (fbevent["start_time"] ?? string.Empty).ToString();
+                revent.eventendtime = (fbevent["end_time"] ?? string.Empty).ToString();
+                var fbcover = fbevent["cover"];
+
+                if (fbcover != null)
+                {
+                    revent.eventcoverurl = (fbcover["source"] ?? string.Empty).ToString();
+                } 
+                else
+                {
+                    revent.eventcoverurl = string.Empty;
+                }
+
+                events.Add(revent);
+            }
             
-			return new OkObjectResult( new Events { events = events } );
+			return new OkObjectResult( new Events { events = events.OrderBy(t => t.eventstarttime ).ToArray() } );
         }
         
         public static async Task<string> Get(string url)
