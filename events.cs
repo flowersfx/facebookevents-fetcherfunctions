@@ -44,7 +44,7 @@ namespace Mandagsklubben.Events
                 var fbplace = fbevent["place"]; // inlining is for machines
                 if (fbplace != null)
                 {
-                    revent.placename = (fbplace["source"] ?? string.Empty).ToString();
+                    revent.placename = (fbplace["name"] ?? string.Empty).ToString();
                     var fblocation = fbplace["location"];
                     if (fblocation != null)
                     {
