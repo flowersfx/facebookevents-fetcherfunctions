@@ -18,12 +18,9 @@ namespace Mandagsklubben.Events
 {
     public static class events
     {
-        static TimeSpan BlobTimeout = TimeSpan.FromMinutes(60);
-
         [FunctionName("events")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log, ExecutionContext context)
+        public static async void Run(
+            [TimerTrigger("0 0 * * * *")]TimerInfo myTimer, ILogger log, ExecutionContext context)
         {
             var config = new ConfigurationBuilder()
                 .SetBasePath(context.FunctionAppDirectory)
@@ -35,18 +32,8 @@ namespace Mandagsklubben.Events
             var account = CloudStorageAccount.Parse(storageConnectionString);
 
             CloudBlobClient cloudBlobClient = account.CreateCloudBlobClient();
-            var events = await DownloadBlobString(cloudBlobClient);
-            if( DateTime.Parse(events.date).IsOutDated() )
-            {
-                events = await GetFacebookEvents(config);
-                await UploadBlobString(cloudBlobClient,events);
-            }
-			return new OkObjectResult(events);
-        }
-
-        public static bool IsOutDated( this DateTime blobdate )
-        {
-            return blobdate + BlobTimeout < DateTime.UtcNow;
+            var events = await GetFacebookEvents(config);
+            await UploadBlobString(cloudBlobClient,events);
         }
 
         public static async Task<Events> GetFacebookEvents(IConfigurationRoot config )
@@ -98,14 +85,6 @@ namespace Mandagsklubben.Events
                 events = events.OrderBy(t => t.starttime ).ToArray(),
                 date = DateTime.UtcNow.ToString("s")
             };
-        }
-
-        public static async Task<Events> DownloadBlobString(CloudBlobClient storageClient)
-        {
-            var cloudBlobContainer = storageClient.GetContainerReference("mandagsklubben-events");
-            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("events.json");
-            var jsonstr = await cloudBlockBlob.DownloadTextAsync();
-            return JsonConvert.DeserializeObject<Events>(jsonstr);
         }
 
         public static async Task UploadBlobString(CloudBlobClient storageClient, Events events)
