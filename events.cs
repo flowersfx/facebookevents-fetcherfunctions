@@ -122,7 +122,5 @@ namespace Mandagsklubben.Events
         public string placestreet { get; set; }
         public string starttime { get; set; }
         public string endtime { get; set; }
-        public string coverwidth { get; set; }
-        public string coverheight { get; set; }
     }
 }
