@@ -11,11 +11,15 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace Mandagsklubben.Events
 {
     public static class events
     {
+        static TimeSpan BlobTimeout = TimeSpan.FromMinutes(60);
+
         [FunctionName("events")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
@@ -27,6 +31,26 @@ namespace Mandagsklubben.Events
                 .AddEnvironmentVariables()
                 .Build();
 
+            string storageConnectionString = config["storageconnectionstring"];
+            var account = CloudStorageAccount.Parse(storageConnectionString);
+
+            CloudBlobClient cloudBlobClient = account.CreateCloudBlobClient();
+            var events = await DownloadBlobString(cloudBlobClient);
+            if( DateTime.Parse(events.date).IsOutDated() )
+            {
+                events = await GetFacebookEvents(config);
+                await UploadBlobString(cloudBlobClient,events);
+            }
+			return new OkObjectResult(events);
+        }
+
+        public static bool IsOutDated( this DateTime blobdate )
+        {
+            return blobdate + BlobTimeout < DateTime.UtcNow;
+        }
+
+        public static async Task<Events> GetFacebookEvents(IConfigurationRoot config )
+        {
             var pageid = config["FACEBOOK_PAGE_ID"];
 			var token = config["FACEBOOK_PAGE_ACCESS_TOKEN"];
 			var url = $"https://graph.facebook.com/{pageid}/events?time_filter=upcoming&fields=cover,name,description,place,start_time,end_time&access_token={token}";
@@ -70,10 +94,28 @@ namespace Mandagsklubben.Events
 
                 events.Add(revent);
             }
-            
-			return new OkObjectResult( new Events { events = events.OrderBy(t => t.starttime ).ToArray() } );
+            return new Events {
+                events = events.OrderBy(t => t.starttime ).ToArray(),
+                date = DateTime.UtcNow.ToString("s")
+            };
         }
-        
+
+        public static async Task<Events> DownloadBlobString(CloudBlobClient storageClient)
+        {
+            var cloudBlobContainer = storageClient.GetContainerReference("mandagsklubben-events");
+            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("data.json");
+            var jsonstr = await cloudBlockBlob.DownloadTextAsync();
+            return JsonConvert.DeserializeObject<Events>(jsonstr);
+        }
+
+        public static async Task UploadBlobString(CloudBlobClient storageClient, Events events)
+        {
+            var cloudBlobContainer = storageClient.GetContainerReference("mandagsklubben-events");
+            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("data.json");
+            var jsonstr = JsonConvert.SerializeObject(events);
+            await cloudBlockBlob.UploadTextAsync(jsonstr);
+        }
+
         public static async Task<string> Get(string url)
         {
             var request = System.Net.WebRequest.Create(url);
@@ -88,6 +130,7 @@ namespace Mandagsklubben.Events
     public class Events
     {
         public Event[] events { get; set; }
+        public string date { get; set; }
     }
 
     public class Event
@@ -100,5 +143,7 @@ namespace Mandagsklubben.Events
         public string placestreet { get; set; }
         public string starttime { get; set; }
         public string endtime { get; set; }
+        public string coverwidth { get; set; }
+        public string coverheight { get; set; }
     }
 }
