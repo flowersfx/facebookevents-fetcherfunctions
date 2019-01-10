@@ -31,7 +31,7 @@ namespace Mandagsklubben.Events
                 .AddEnvironmentVariables()
                 .Build();
 
-            string storageConnectionString = config["storageconnectionstring"];
+            string storageConnectionString = config["BLOB_STORAGE_CONNECTION_STRING"];
             var account = CloudStorageAccount.Parse(storageConnectionString);
 
             CloudBlobClient cloudBlobClient = account.CreateCloudBlobClient();
@@ -103,7 +103,7 @@ namespace Mandagsklubben.Events
         public static async Task<Events> DownloadBlobString(CloudBlobClient storageClient)
         {
             var cloudBlobContainer = storageClient.GetContainerReference("mandagsklubben-events");
-            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("data.json");
+            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("events.json");
             var jsonstr = await cloudBlockBlob.DownloadTextAsync();
             return JsonConvert.DeserializeObject<Events>(jsonstr);
         }
@@ -111,7 +111,7 @@ namespace Mandagsklubben.Events
         public static async Task UploadBlobString(CloudBlobClient storageClient, Events events)
         {
             var cloudBlobContainer = storageClient.GetContainerReference("mandagsklubben-events");
-            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("data.json");
+            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("events.json");
             var jsonstr = JsonConvert.SerializeObject(events);
             await cloudBlockBlob.UploadTextAsync(jsonstr);
         }
