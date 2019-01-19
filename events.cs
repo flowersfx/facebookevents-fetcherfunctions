@@ -18,11 +18,13 @@ namespace Mandagsklubben.Events
 {
     public static class events
     {
+        static IConfigurationRoot config;
+
         [FunctionName("events")]
         public static async void Run(
             [TimerTrigger("0 0 * * * *")]TimerInfo myTimer, ILogger log, ExecutionContext context)
         {
-            var config = new ConfigurationBuilder()
+            config = new ConfigurationBuilder()
                 .SetBasePath(context.FunctionAppDirectory)
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
@@ -40,7 +42,7 @@ namespace Mandagsklubben.Events
         {
             var pageid = config["FACEBOOK_PAGE_ID"];
 			var token = config["FACEBOOK_PAGE_ACCESS_TOKEN"];
-			var url = $"https://graph.facebook.com/{pageid}/events?time_filter=upcoming&fields=cover,name,description,place,start_time,end_time&access_token={token}";
+			var url = $"https://graph.facebook.com/{pageid}/events?time_filter=upcoming&fields=cover,name,description,place,start_time,end_time,is_draft&access_token={token}";
             var jsonreader = new JsonTextReader(new StringReader(await Get(url)));
             jsonreader.DateParseHandling = DateParseHandling.None;
             JArray fbevents = (JArray)JObject.Load(jsonreader)["data"];
@@ -49,6 +51,7 @@ namespace Mandagsklubben.Events
             foreach(var fbevent in fbevents) {
                 var revent = new Event();
                 revent.id = (fbevent["id"] ?? string.Empty).ToString();
+                revent.isdraft = (fbevent["is_draft"] ?? string.Empty).ToString();
                 revent.name = (fbevent["name"] ?? string.Empty).ToString();
                 revent.description = (fbevent["description"] ?? string.Empty).ToString();
                 
@@ -89,8 +92,8 @@ namespace Mandagsklubben.Events
 
         public static async Task UploadBlobString(CloudBlobClient storageClient, Events events)
         {
-            var cloudBlobContainer = storageClient.GetContainerReference("mandagsklubben-events");
-            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference("events.json");
+            var cloudBlobContainer = storageClient.GetContainerReference(config["BLOB_STORAGE_CONTAINER_NAME"]);
+            CloudBlockBlob cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(config["BLOB_STORAGE_FILE_NAME"]);
             var jsonstr = JsonConvert.SerializeObject(events);
             await cloudBlockBlob.UploadTextAsync(jsonstr);
         }
@@ -122,5 +125,6 @@ namespace Mandagsklubben.Events
         public string placestreet { get; set; }
         public string starttime { get; set; }
         public string endtime { get; set; }
+        public string isdraft {get; set; }
     }
 }
