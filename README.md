@@ -1,12 +1,12 @@
 # Facebook Events Fetcher Functions
 
-An Azure timer function in C# to retrieve a specific subset of event fields for all upcoming events published on a specific Facebook Page and store them in blob storage as flattened json file.
+An Azure timer function in C# to retrieve a specific subset of event fields for all upcoming events published on a specific Facebook Page and store them in blob storage as a flattened json file.
 
 Deploy to Azure Functions and make sure the following application settings are present:
 
 ```FACEBOOK_PAGE_ACCESS_TOKEN```
 
-A page access token generated and extended for Facebook Graph API (yep still works as of January 2019).
+A page access token generated and extended for Facebook Graph API.
 
 ```FACEBOOK_PAGE_ID```
 

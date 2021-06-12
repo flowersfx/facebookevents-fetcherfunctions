@@ -21,7 +21,7 @@ namespace Mandagsklubben.Events
         static IConfigurationRoot config;
 
         [FunctionName("events")]
-        public static async void Run(
+        public static async Task Run(
             [TimerTrigger("0 0 * * * *")]TimerInfo myTimer, ILogger log, ExecutionContext context)
         {
             config = new ConfigurationBuilder()
